@@ -1,7 +1,7 @@
 const http = require('http');
 
 const token = process.env.CRON_TOKEN || 'token_for_cron_reminder_dispatch';
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 1403;
 const url = `http://localhost:${port}/api/cron?token=${token}`;
 
 console.log(`[Reminder Cron] Background scheduler started. Targets: ${url}`);

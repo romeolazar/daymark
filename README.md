@@ -48,7 +48,7 @@ docker compose up -d --build
 ```
 
 3. Once built and started, open your browser and navigate to:
-   - **Main Web Interface**: [http://localhost:3000](http://localhost:3000)
+   - **Main Web Interface**: [http://localhost:1403](http://localhost:1403)
 
 ---
 
@@ -67,7 +67,7 @@ You can customize the deployment behaviour inside `docker-compose.yml` under the
 
 ## ⚙️ App Setup & Telegram Reminders
 
-1. **Initial Admin Onboarding**: When you open [http://localhost:3000](http://localhost:3000) for the first time, you will be redirected to `/register` to create the initial admin account.
+1. **Initial Admin Onboarding**: When you open [http://localhost:1403](http://localhost:1403) for the first time, you will be redirected to `/register` to create the initial admin account.
 2. **Setting Up Telegram Notifications**:
    - Go to your Telegram app and search for `@BotFather`. Follow the prompts to create a new bot and obtain the **Bot Token**.
    - Create a chat or group and retrieve your **Chat ID** (you can use bots like `@userinfobot` to retrieve it).
@@ -101,4 +101,4 @@ npx prisma generate
 npm run dev
 ```
 
-The site will be running at [http://localhost:3000](http://localhost:3000). The development command also starts the background cron script in parallel to trigger notifications.
+The site will be running at [http://localhost:1403](http://localhost:1403). The development command also starts the background cron script in parallel to trigger notifications.

@@ -3,12 +3,13 @@ services:
     build: .
     container_name: daymark
     ports:
-      - "3000:3000"
+      - "1403:1403"
     environment:
       - DATABASE_URL=postgresql://daymark:password@db:5432/daymark
       - JWT_SECRET=super_secret_jwt_key_daymark_2026
       - CRON_TOKEN=token_for_cron_reminder_dispatch
       - NODE_ENV=development
+      - PORT=1403
     command: sh -c "npx prisma db push && npm run dev"
     volumes:
       - .:/app
