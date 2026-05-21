@@ -43,12 +43,15 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   // Check if any user exists. Used by login page to decide if we show signup or login.
   try {
     const userCount = await prisma.user.count();
     return NextResponse.json({ registrationOpen: userCount === 0 });
   } catch (error) {
+    console.error('Registration check failed:', error);
     return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
   }
 }
