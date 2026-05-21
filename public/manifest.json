@@ -1,0 +1,17 @@
+{
+  "name": "Daymark — Event Tracker & Countdown",
+  "short_name": "Daymark",
+  "description": "Self-hosted mobile-friendly event countdown and count-up tracker with Telegram reminders.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0c16",
+  "theme_color": "#0b0c16",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

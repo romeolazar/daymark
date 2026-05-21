@@ -1,0 +1,317 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Modern Dark Color Palette (Abyss/Glassmorphism theme) */
+  --bg-app: hsl(224, 71%, 4%);
+  --bg-gradient-start: hsl(222, 47%, 7%);
+  --bg-gradient-end: hsl(224, 71%, 3%);
+  
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-bg-hover: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-border-active: rgba(255, 255, 255, 0.15);
+  
+  --text-primary: hsl(0, 0%, 96%);
+  --text-secondary: hsl(215, 20%, 65%);
+  --text-muted: hsl(215, 12%, 45%);
+  
+  /* Glow / Accent colors */
+  --accent: hsl(250, 85%, 65%);
+  --accent-glow: hsla(250, 85%, 65%, 0.15);
+  --accent-hover: hsl(250, 85%, 72%);
+  
+  --success: hsl(142, 72%, 45%);
+  --warning: hsl(38, 92%, 50%);
+  --danger: hsl(346, 84%, 55%);
+  --info: hsl(199, 89%, 48%);
+  
+  /* Category Colors */
+  --cat-personal: hsl(280, 80%, 65%);
+  --cat-work: hsl(180, 80%, 45%);
+  --cat-birthday: hsl(38, 90%, 55%);
+  --cat-anniversary: hsl(340, 85%, 60%);
+  --cat-warranty: hsl(215, 85%, 60%);
+  --cat-travel: hsl(150, 75%, 45%);
+  --cat-shipment: hsl(45, 90%, 50%);
+  --cat-project: hsl(260, 80%, 65%);
+  --cat-other: hsl(200, 15%, 60%);
+  
+  --border-radius-sm: 8px;
+  --border-radius-md: 14px;
+  --border-radius-lg: 24px;
+  --border-radius-full: 9999px;
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(253, 100%, 25%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(215, 100%, 20%, 0.15) 0px, transparent 50%),
+    linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: var(--border-radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border-active);
+}
+
+/* Layout Elements */
+main {
+  min-height: 100vh;
+  padding: 2rem 1.5rem 6rem;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  main {
+    padding: 3rem 2rem 4rem;
+    max-width: 700px;
+  }
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Glassmorphism container helper */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-glass);
+}
+
+/* Micro-animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.glowing-orb {
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  border-radius: var(--border-radius-full);
+  filter: blur(80px);
+  z-index: -1;
+  pointer-events: none;
+  animation: pulse-glow 8s infinite ease-in-out;
+}
+
+.orb-1 {
+  top: 10%;
+  left: -5%;
+  background: hsla(250, 85%, 65%, 0.1);
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  bottom: 10%;
+  right: -5%;
+  background: hsla(180, 85%, 50%, 0.08);
+  animation-delay: 4s;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.form-control {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  padding: 0.75rem 1rem;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: var(--transition-smooth);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-bounce);
+  gap: 0.5rem;
+  user-select: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), hsl(265, 80%, 60%));
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(110, 68, 255, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(110, 68, 255, 0.5);
+  background: linear-gradient(135deg, var(--accent-hover), hsl(265, 80%, 65%));
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+}
+
+.btn-secondary:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-active);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: var(--danger);
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Utility Animations */
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Styled Date/Time Input Wrapper */
+.date-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.date-input-wrapper::before {
+  content: '📅';
+  position: absolute;
+  left: 0.85rem;
+  font-size: 1.1rem;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.time-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.time-input-wrapper::before {
+  content: '⏰';
+  position: absolute;
+  left: 0.85rem;
+  font-size: 1.1rem;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.date-input, .time-input {
+  padding-left: 2.75rem !important;
+  width: 100%;
+}
+
+/* Custom Calendar & Clock Picker Webkit indicator icons */
+.form-control::-webkit-calendar-picker-indicator {
+  filter: invert(1) hue-rotate(20deg) brightness(1.2);
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 4px;
+  border-radius: 4px;
+  transition: var(--transition-smooth);
+}
+
+.form-control::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.15);
+}
+

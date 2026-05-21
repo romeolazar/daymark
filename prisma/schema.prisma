@@ -1,0 +1,103 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  displayName  String?
+  timezone     String     @default("UTC")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  events       Event[]
+  categories   Category[]
+  settings     Settings?
+}
+
+model Settings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  telegramEnabled     Boolean  @default(false)
+  telegramBotToken    String?
+  telegramChatId      String?
+  defaultReminderTime String   @default("09:00") // Format "HH:mm"
+  defaultViewFormat   String   @default("DAYS") // DAYS, MONTHS_DAYS, YEARS_MONTHS_DAYS, HOURS
+  timeFormat          String   @default("12H") // "12H" or "24H"
+  dateFormat          String   @default("MMMM_DD_YYYY") // "DD_MMMM_YYYY" or "MMMM_DD_YYYY"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  color     String?  // Hex color code, e.g., "#FF5733"
+  icon      String?  // Emoji or icon name
+  createdAt DateTime @default(now())
+  events    Event[]
+
+  @@unique([userId, name])
+}
+
+enum EventMode {
+  COUNTDOWN
+  COUNTUP
+  AUTO
+}
+
+enum RepeatType {
+  NONE
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum IconType {
+  EMOJI
+  PNG
+  BUILTIN
+}
+
+model Event {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId      String?
+  category        Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  name            String
+  description     String?     @db.Text
+  eventDate       DateTime    // Date of the event (UTC or local start)
+  eventTime       String?     // Optional "HH:mm" time
+  timezone        String      @default("UTC")
+  mode            EventMode   @default(AUTO)
+  repeatType      RepeatType  @default(NONE)
+  keepOnTop       Boolean     @default(false)
+  iconType        IconType    @default(EMOJI)
+  iconValue       String      @default("📅") // Emoji string or filename
+  backgroundImage String?     // File path or URL
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  reminders       Reminder[]
+}
+
+model Reminder {
+  id             String    @id @default(uuid())
+  eventId        String
+  event          Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  offsetDays     Int       // 0 for same day, 1 for 1 day before, etc.
+  reminderTime   String    @default("09:00") // "HH:mm"
+  channel        String    @default("TELEGRAM") // TELEGRAM, WEB
+  enabled        Boolean   @default(true)
+  lastSentAt     DateTime? // Store last sent timestamp to prevent duplicates
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
