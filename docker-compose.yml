@@ -8,13 +8,9 @@ services:
       - DATABASE_URL=postgresql://daymark:password@db:5432/daymark
       - JWT_SECRET=super_secret_jwt_key_daymark_2026
       - CRON_TOKEN=token_for_cron_reminder_dispatch
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=1403
-    command: sh -c "npx prisma db push && npm run dev"
     volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
       - uploads_data:/app/public/uploads
     depends_on:
       db:
