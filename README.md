@@ -32,7 +32,7 @@
 
 ## 🚀 Deploying with Docker Compose (Recommended)
 
-Deploying Daymark is easy. You can run the entire stack (Next.js Application, PostgreSQL Database, and Background Reminder Cron) using a single command.
+Deploying Daymark is simple. You can pull and run the entire pre-built stack (Next.js Application, PostgreSQL Database, and Background Reminder Cron) using our official Docker Hub image: `romeolazar/daymark:latest`.
 
 ### Prerequisites
 
@@ -40,14 +40,14 @@ Ensure you have [Docker](https://www.docker.com/) and [Docker Compose](https://d
 
 ### Run the Application
 
-1. Clone or download the repository to your server/machine.
-2. In the root directory (where `docker-compose.yml` is located), start the services:
+1. Copy the `docker-compose.yml` file from this repository to your server or directory.
+2. Run the following command to pull the pre-built image and start the containers in the background:
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
-3. Once built and started, open your browser and navigate to:
+3. Open your browser and navigate to:
    - **Main Web Interface**: [http://localhost:1403](http://localhost:1403)
 
 ---
