@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.*
+.git
+.gitignore
+.next
+.next-docs
+Dockerfile
+README.md
+docker-compose*.yml
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage
+dist

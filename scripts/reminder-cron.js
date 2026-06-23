@@ -1,10 +1,17 @@
 const http = require('http');
 
-const token = process.env.CRON_TOKEN || 'token_for_cron_reminder_dispatch';
+const token = process.env.CRON_TOKEN;
 const port = process.env.PORT || 1403;
-const url = `http://localhost:${port}/api/cron?token=${token}`;
 
-console.log(`[Reminder Cron] Background scheduler started. Targets: ${url}`);
+if (!token) {
+  console.error('[Reminder Cron] CRON_TOKEN is required.');
+  process.exit(1);
+}
+
+const baseUrl = process.env.CRON_BASE_URL || `http://localhost:${port}`;
+const url = `${baseUrl}/api/cron?token=${encodeURIComponent(token)}`;
+
+console.log(`[Reminder Cron] Background scheduler started. Target: ${baseUrl}/api/cron`);
 
 function runCron() {
   http.get(url, (res) => {

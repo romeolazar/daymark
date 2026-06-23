@@ -1,34 +1,70 @@
 services:
+  migrate:
+    image: romeolazar/daymark:latest
+    container_name: daymark-migrate
+    command: npx prisma db push
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in your environment}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   app:
     image: romeolazar/daymark:latest
     container_name: daymark
     ports:
-      - "1403:1403"
+      - "${APP_PORT:-1403}:1403"
     environment:
-      - DATABASE_URL=postgresql://daymark:password@db:5432/daymark
-      - JWT_SECRET=super_secret_jwt_key_daymark_2026
-      - CRON_TOKEN=token_for_cron_reminder_dispatch
-      - NODE_ENV=production
-      - PORT=1403
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in your environment}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in your environment}
+      CRON_TOKEN: ${CRON_TOKEN:?Set CRON_TOKEN in your environment}
+      NODE_ENV: production
+      PORT: 1403
     volumes:
       - uploads_data:/app/public/uploads
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://127.0.0.1:' + (process.env.PORT || 1403), r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  cron:
+    image: romeolazar/daymark:latest
+    container_name: daymark-cron
+    command: node scripts/reminder-cron.js
+    environment:
+      CRON_BASE_URL: http://app:1403
+      CRON_TOKEN: ${CRON_TOKEN:?Set CRON_TOKEN in your environment}
+      PORT: 1403
+    depends_on:
+      app:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
     container_name: daymark-db
     environment:
-      - POSTGRES_DB=daymark
-      - POSTGRES_USER=daymark
-      - POSTGRES_PASSWORD=password
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in your environment}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in your environment}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your environment}
     volumes:
       - pg_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U daymark -d daymark"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-daymark} -d $${POSTGRES_DB:-daymark}"]
       interval: 5s
       timeout: 5s
       retries: 5

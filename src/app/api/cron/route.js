@@ -9,11 +9,13 @@ export async function GET(req) {
   const queryToken = req.nextUrl.searchParams.get('token');
   const expectedToken = process.env.CRON_TOKEN;
 
-  if (expectedToken) {
-    const token = authHeader?.replace('Bearer ', '') || queryToken;
-    if (token !== expectedToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!expectedToken) {
+    return NextResponse.json({ error: 'Cron token is not configured' }, { status: 500 });
+  }
+
+  const token = authHeader?.replace('Bearer ', '') || queryToken;
+  if (token !== expectedToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
