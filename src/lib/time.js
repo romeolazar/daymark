@@ -14,20 +14,24 @@
  * @returns {Date}
  */
 export function getNextOccurrence(baseDate, repeatType, refDate = new Date()) {
+  return getOccurrenceWindow(baseDate, repeatType, refDate).next;
+}
+
+/**
+ * The next occurrence on or after the reference date, and the one before it.
+ * `previous` is null for non-repeating events and before the first occurrence.
+ *
+ * @param {Date} baseDate - The original event date
+ * @param {string} repeatType - 'NONE', 'WEEKLY', 'MONTHLY', 'YEARLY'
+ * @param {Date} [refDate=new Date()] - Reference date (default is now)
+ * @returns {{ previous: Date|null, next: Date }}
+ */
+export function getOccurrenceWindow(baseDate, repeatType, refDate = new Date()) {
   const base = new Date(baseDate);
   const ref = new Date(refDate);
 
-  if (!repeatType || repeatType === 'NONE') {
-    return base;
-  }
-
-  // If the base date is in the future, it is the next occurrence
-  if (base.getTime() >= ref.getTime()) {
-    return base;
-  }
-
-  if (!['WEEKLY', 'MONTHLY', 'YEARLY'].includes(repeatType)) {
-    return base;
+  if (!['WEEKLY', 'MONTHLY', 'YEARLY'].includes(repeatType) || base.getTime() >= ref.getTime()) {
+    return { previous: null, next: base };
   }
 
   // Always step from the base date, so a clamped month (Jan 31 -> Feb 28)
@@ -35,9 +39,72 @@ export function getNextOccurrence(baseDate, repeatType, refDate = new Date()) {
   for (let count = 1; ; count++) {
     const next = addRepeatPeriods(base, repeatType, count);
     if (next.getTime() >= ref.getTime()) {
-      return next;
+      return { previous: addRepeatPeriods(base, repeatType, count - 1), next };
     }
   }
+}
+
+/**
+ * Local Date for an event's calendar day and optional "HH:mm" time.
+ * Event dates are stored as midnight UTC of the calendar day, so the UTC
+ * fields hold the day the user picked, whatever the browser timezone.
+ *
+ * @param {string|Date} eventDate
+ * @param {string} [eventTime]
+ * @returns {Date}
+ */
+export function getEventBaseDate(eventDate, eventTime = null) {
+  const stored = new Date(eventDate);
+  const [hours, minutes] = eventTime ? eventTime.split(':').map(Number) : [0, 0];
+  return new Date(stored.getUTCFullYear(), stored.getUTCMonth(), stored.getUTCDate(), hours, minutes);
+}
+
+/**
+ * Share of the wait already behind us for an upcoming event, from 0 to 1.
+ * The wait starts at the previous occurrence for repeating events, otherwise
+ * when the event was added. Returns null for past or count-up events.
+ *
+ * @param {{ eventDate: string|Date, eventTime?: string|null, repeatType?: string, mode?: string, createdAt?: string|Date }} event
+ * @param {Date} [now=new Date()]
+ * @returns {number|null}
+ */
+export function getWaitProgress(event, now = new Date()) {
+  if (event.mode === 'COUNTUP') return null;
+
+  const base = getEventBaseDate(event.eventDate, event.eventTime);
+  const { previous, next } = getOccurrenceWindow(base, event.repeatType, now);
+  if (next.getTime() < now.getTime()) return null;
+
+  const start = previous || (event.createdAt ? new Date(event.createdAt) : null);
+  if (!start || start.getTime() >= next.getTime()) return null;
+
+  const progress = (now.getTime() - start.getTime()) / (next.getTime() - start.getTime());
+  return Math.min(1, Math.max(0, progress));
+}
+
+/**
+ * Occurrences of an event between two dates, for the timeline.
+ * Weekly events only contribute their next occurrence to keep it readable.
+ *
+ * @param {{ eventDate: string|Date, eventTime?: string|null, repeatType?: string }} event
+ * @param {Date} from
+ * @param {Date} to
+ * @returns {Date[]}
+ */
+export function getOccurrencesBetween(event, from, to) {
+  const base = getEventBaseDate(event.eventDate, event.eventTime);
+  const { next } = getOccurrenceWindow(base, event.repeatType, from);
+  if (next.getTime() > to.getTime() || next.getTime() < from.getTime()) return [];
+
+  if (event.repeatType !== 'MONTHLY' && event.repeatType !== 'YEARLY') return [next];
+
+  const occurrences = [];
+  for (let count = 0; ; count++) {
+    const date = addRepeatPeriods(base, event.repeatType, count);
+    if (date.getTime() > to.getTime()) break;
+    if (date.getTime() >= from.getTime()) occurrences.push(date);
+  }
+  return occurrences;
 }
 
 /**
@@ -220,15 +287,8 @@ function getDateDifferenceDetails(date1, date2) {
 export function calculateTimeEngine(eventDate, eventTime = null, mode = 'AUTO', repeatType = 'NONE') {
   const now = new Date();
   
-  // Combine date and time
-  const originalDate = new Date(eventDate);
-  if (eventTime) {
-    const [hours, minutes] = eventTime.split(':').map(Number);
-    originalDate.setHours(hours, minutes, 0, 0);
-  } else {
-    // If no time is specified, default to 00:00:00 for calculations
-    originalDate.setHours(0, 0, 0, 0);
-  }
+  // Combine date and time (00:00 if no time is specified)
+  const originalDate = getEventBaseDate(eventDate, eventTime);
 
   // Calculate next occurrence if recurring
   const displayDate = repeatType !== 'NONE' 

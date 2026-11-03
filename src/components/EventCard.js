@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import styles from '../styles/components/EventCard.module.css';
-import { calculateTimeEngine, formatEventDate, formatEventTime } from '../lib/time';
+import ProgressRing from './ProgressRing';
+import { calculateTimeEngine, formatEventDate, formatEventTime, getWaitProgress } from '../lib/time';
 
 export default function EventCard({ 
   event, 
@@ -15,6 +16,7 @@ export default function EventCard({
 }) {
   const [formatMode, setFormatMode] = useState(defaultFormat);
   const [timeDetails, setTimeDetails] = useState(null);
+  const [progress, setProgress] = useState(null);
 
   // Sync formatMode if defaultFormat changes
   useEffect(() => {
@@ -31,6 +33,7 @@ export default function EventCard({
         event.repeatType
       );
       setTimeDetails(details);
+      setProgress(getWaitProgress(event));
     };
 
     updateTime();
@@ -84,6 +87,20 @@ export default function EventCard({
     color: catColor
   };
 
+  const emoji = event.iconType === 'EMOJI' ? event.iconValue : '📅';
+  const ringColor = event.category?.color || 'var(--accent)';
+
+  // Upcoming events show how much of the wait has passed around their icon
+  const renderIcon = (wrapperClass, ringSize, fontSize) => (
+    progress === null ? (
+      <div className={wrapperClass}>{emoji}</div>
+    ) : (
+      <ProgressRing progress={progress} size={ringSize} color={ringColor}>
+        <span style={{ fontSize }}>{emoji}</span>
+      </ProgressRing>
+    )
+  );
+
   if (viewMode === 'POSTER') {
     const posterClasses = [
       styles.posterCard,
@@ -96,9 +113,7 @@ export default function EventCard({
         <div className={styles.posterContent}>
           {/* Header */}
           <div className={styles.posterHeader}>
-            <div className={styles.posterIcon}>
-              {event.iconType === 'EMOJI' ? event.iconValue : '📅'}
-            </div>
+            {renderIcon(styles.posterIcon, 60, '2rem')}
             {event.keepOnTop && (
               <span className={styles.posterPinIcon} title="Pinned to top">📌</span>
             )}
@@ -175,9 +190,7 @@ export default function EventCard({
     return (
       <div className={styles.listCard} onClick={cycleFormat}>
         {/* Left: Icon/Emoji */}
-        <div className={styles.listIconWrapper}>
-          {event.iconType === 'EMOJI' ? event.iconValue : '📅'}
-        </div>
+        {renderIcon(styles.listIconWrapper, 42, '1.3rem')}
 
         {/* Middle: Title, Date, and Badges */}
         <div className={styles.listInfoWrapper}>
@@ -250,9 +263,7 @@ export default function EventCard({
       <div className={styles.cardContent}>
         {/* Header Section */}
         <div className={styles.header}>
-          <div className={styles.iconWrapper}>
-            {event.iconType === 'EMOJI' ? event.iconValue : '📅'}
-          </div>
+          {renderIcon(styles.iconWrapper, 52, '1.6rem')}
           
           <div className={styles.titleWrapper}>
             <h3 className={styles.title}>{event.name}</h3>

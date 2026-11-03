@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import EventCard from '../components/EventCard';
 import Link from 'next/link';
-import { getNextOccurrence } from '../lib/time';
+import Timeline from '../components/Timeline';
+import { getNextOccurrence, getEventBaseDate } from '../lib/time';
 
 export default function Dashboard() {
   const [events, setEvents] = useState([]);
@@ -178,13 +179,7 @@ export default function Dashboard() {
 
   // Helper to determine the calculated target date for sorting and classification
   const getEventDisplayDate = (event) => {
-    const originalDate = new Date(event.eventDate);
-    if (event.eventTime) {
-      const [hours, minutes] = event.eventTime.split(':').map(Number);
-      originalDate.setHours(hours, minutes, 0, 0);
-    } else {
-      originalDate.setHours(0, 0, 0, 0);
-    }
+    const originalDate = getEventBaseDate(event.eventDate, event.eventTime);
     return event.repeatType !== 'NONE'
       ? getNextOccurrence(originalDate, event.repeatType, now)
       : originalDate;
@@ -229,7 +224,7 @@ export default function Dashboard() {
       
       <main className="fade-in">
         {/* Aesthetic Dashboard Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
           <div>
             <h2 style={{ fontSize: '1.75rem', fontWeight: 700 }}>
               Your events, {user?.displayName || 'User'}
@@ -238,7 +233,7 @@ export default function Dashboard() {
               Tracking {events.length} important milestones and reminders
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
             {/* View Mode Toggle Buttons */}
             <div className="glass" style={{ display: 'flex', padding: '2px', borderRadius: 'var(--border-radius-sm)' }}>
               <button
@@ -437,6 +432,8 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
+            <Timeline events={filteredEvents} dateFormat={user?.settings?.dateFormat} />
+
             {/* Pinned Events */}
             {pinnedEvents.length > 0 && (
               <div style={{ marginBottom: '2.25rem' }}>

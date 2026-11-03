@@ -1,0 +1,127 @@
+.timeline {
+  padding: 1rem 1.25rem 0.75rem;
+  margin-bottom: 2.25rem;
+  border-radius: var(--border-radius-md);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.heading {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Side padding keeps bubbles at the edges inside the panel */
+.track {
+  position: relative;
+  margin: 0 calc(26px / 2);
+}
+
+.area {
+  position: relative;
+}
+
+.stem {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.dot {
+  position: absolute;
+  bottom: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.bubble {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  line-height: 1;
+  text-decoration: none;
+  transform: translateX(-50%);
+  transition: var(--transition-bounce);
+}
+
+.bubble:hover,
+.bubble:focus-visible {
+  transform: translateX(-50%) scale(1.25);
+  z-index: 2;
+  outline: none;
+}
+
+.axis {
+  position: relative;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--accent), var(--glass-border-active) 40%, var(--glass-border));
+}
+
+.today {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.tick {
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: 8px;
+  background: var(--glass-border-active);
+}
+
+.labels {
+  position: relative;
+  height: 1.4rem;
+  margin-top: 0.35rem;
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.todayLabel {
+  color: var(--accent-hover);
+  transform: none;
+}
