@@ -26,7 +26,7 @@
 - 📝 **Categorization & Custom Icons**: Create custom color-coded categories and select from a flat-grid emoji picker of 64 preset icons.
 - 🔒 **Self-Hosted Security**: Protect your data with authorization middleware powered by Next.js and Prisma, backed by an embedded SQLite database stored in a Docker volume.
 - 🤖 **Telegram Notifications**: Set up automated event alerts (3, 2, or 1 day(s) before and on the day of the event) delivered directly to your Telegram bot.
-- ⏰ **Built-in Reminder Scheduler**: Reminders are checked every minute inside the app process, with no separate cron container.
+- ⏰ **Built-in Reminder Scheduler**: Reminders are checked every minute inside the app process.
 - 📦 **Single Container**: App, database and scheduler run in one container with one data volume.
 
 ---
@@ -85,31 +85,6 @@ Stopping the container and copying the volume also works.
 | `CRON_TOKEN` | Optional. Enables the manual trigger `GET /api/cron?token=...`. Reminders run automatically without it. | empty (disabled) |
 | `DATABASE_URL` | SQLite file location. Only change it if you know why. | `file:/app/data/daymark.db` |
 | `DISABLE_SCHEDULER` | Set to `true` to turn off the built-in reminder scheduler. | `false` |
-
----
-
-## 🔁 Migrating from the PostgreSQL setup
-
-Earlier versions ran four containers (`daymark`, `daymark-cron`, `daymark-migrate`, `daymark-db`). To move your data into the single-container setup:
-
-1. Keep the old `daymark-db` container running and note its network (e.g. `daymark_default`) and its `DATABASE_URL`.
-2. Stop the old app containers so nothing writes during the copy: `docker stop daymark daymark-cron`.
-3. Pull the new image and copy the data into a new volume:
-
-```bash
-docker pull romeolazar/daymark:latest
-docker run --rm \
-  --network daymark_default \
-  -v daymark_data:/app/data \
-  -e SOURCE_DATABASE_URL=postgresql://daymark:PASSWORD@db:5432/daymark \
-  romeolazar/daymark:latest \
-  node scripts/migrate-from-postgres.js
-```
-
-The script copies users, settings, categories, events and reminders (including IDs, so existing sessions and reminder history keep working) and verifies the row counts.
-
-4. Remove the old containers (`daymark`, `daymark-cron`, `daymark-migrate`, `daymark-db`) and deploy the new `docker-compose.yml`, using the same volume name (`daymark_data`) and the same `JWT_SECRET`.
-5. Once everything looks right, you can delete the old `pg_data` volume.
 
 ---
 
