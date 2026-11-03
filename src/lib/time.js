@@ -26,35 +26,150 @@ export function getNextOccurrence(baseDate, repeatType, refDate = new Date()) {
     return base;
   }
 
-  const next = new Date(base);
-
-  switch (repeatType) {
-    case 'WEEKLY':
-      // Add weeks until next is on or after ref
-      while (next.getTime() < ref.getTime()) {
-        next.setDate(next.getDate() + 7);
-      }
-      break;
-
-    case 'MONTHLY':
-      // Add months until next is on or after ref
-      while (next.getTime() < ref.getTime()) {
-        next.setMonth(next.getMonth() + 1);
-      }
-      break;
-
-    case 'YEARLY':
-      // Add years until next is on or after ref
-      while (next.getTime() < ref.getTime()) {
-        next.setFullYear(next.getFullYear() + 1);
-      }
-      break;
-
-    default:
-      break;
+  if (!['WEEKLY', 'MONTHLY', 'YEARLY'].includes(repeatType)) {
+    return base;
   }
 
+  // Always step from the base date, so a clamped month (Jan 31 -> Feb 28)
+  // does not shift every later occurrence
+  for (let count = 1; ; count++) {
+    const next = addRepeatPeriods(base, repeatType, count);
+    if (next.getTime() >= ref.getTime()) {
+      return next;
+    }
+  }
+}
+
+/**
+ * Adds `count` repeat periods to a date. Monthly and yearly steps keep the
+ * original day of month, clamped to the last day of shorter months
+ * (Jan 31 -> Feb 28 -> Mar 31, Feb 29 -> Feb 28 in non-leap years).
+ *
+ * @param {Date} base
+ * @param {string} repeatType - 'WEEKLY', 'MONTHLY', 'YEARLY'
+ * @param {number} count
+ * @returns {Date}
+ */
+function addRepeatPeriods(base, repeatType, count) {
+  const next = new Date(base);
+
+  if (repeatType === 'WEEKLY') {
+    next.setDate(base.getDate() + 7 * count);
+    return next;
+  }
+
+  const targetMonth = base.getMonth() + (repeatType === 'MONTHLY' ? count : count * 12);
+  const lastDayOfMonth = new Date(base.getFullYear(), targetMonth + 1, 0).getDate();
+  next.setFullYear(base.getFullYear(), targetMonth, Math.min(base.getDate(), lastDayOfMonth));
   return next;
+}
+
+/**
+ * Returns the timezone if the runtime knows it, otherwise 'UTC'.
+ *
+ * @param {string} [timeZone]
+ * @returns {string}
+ */
+export function resolveTimeZone(timeZone) {
+  if (!timeZone) return 'UTC';
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+    return timeZone;
+  } catch {
+    return 'UTC';
+  }
+}
+
+/**
+ * Wall-clock fields of an instant in an IANA timezone (month is 0-based).
+ *
+ * @param {Date} date
+ * @param {string} timeZone
+ * @returns {{ year: number, month: number, day: number, hour: number, minute: number, second: number }}
+ */
+export function getZonedParts(date, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric'
+  }).formatToParts(date);
+  const get = (type) => Number(parts.find(p => p.type === type).value);
+
+  return {
+    year: get('year'),
+    month: get('month') - 1,
+    day: get('day'),
+    hour: get('hour'),
+    minute: get('minute'),
+    second: get('second')
+  };
+}
+
+/**
+ * Converts a wall-clock time in an IANA timezone to the real instant.
+ *
+ * @param {number} year
+ * @param {number} month - 0-based
+ * @param {number} day
+ * @param {number} hour
+ * @param {number} minute
+ * @param {string} timeZone
+ * @returns {Date}
+ */
+export function zonedTimeToUtc(year, month, day, hour, minute, timeZone) {
+  const wall = Date.UTC(year, month, day, hour, minute);
+  const offsetAt = (instant) => {
+    const p = getZonedParts(new Date(instant), timeZone);
+    return Date.UTC(p.year, p.month, p.day, p.hour, p.minute, p.second) - instant;
+  };
+
+  // Second pass picks the right offset when the first guess crosses a DST switch
+  const guess = wall - offsetAt(wall);
+  return new Date(wall - offsetAt(guess));
+}
+
+/**
+ * Works out when a reminder is due, in the event's own timezone.
+ *
+ * Event dates are stored as midnight UTC of the calendar day, while eventTime
+ * and reminderTime are wall-clock times in `timeZone`. The result does not
+ * depend on the timezone of the server running it.
+ *
+ * @param {{ eventDate: Date|string, eventTime?: string|null, repeatType?: string }} event
+ * @param {{ offsetDays: number, reminderTime?: string }} reminder
+ * @param {string} [timeZone]
+ * @param {Date} [now=new Date()]
+ * @returns {{ occurrence: Date, triggerAt: Date, triggerDayStart: Date }}
+ *   occurrence carries the wall-clock date of the event occurrence in its local
+ *   fields (for display); triggerAt and triggerDayStart are real instants.
+ */
+export function getReminderSchedule(event, reminder, timeZone, now = new Date()) {
+  const tz = resolveTimeZone(timeZone);
+  const stored = new Date(event.eventDate);
+  const [eventHours, eventMinutes] = event.eventTime ? event.eventTime.split(':').map(Number) : [0, 0];
+
+  // Dates in this "wall clock" frame hold the wall-clock fields of `tz` in their local fields
+  const base = new Date(stored.getUTCFullYear(), stored.getUTCMonth(), stored.getUTCDate(), eventHours, eventMinutes);
+  const today = getZonedParts(now, tz);
+  const startOfToday = new Date(today.year, today.month, today.day);
+
+  // An occurrence earlier today still counts, so same-day reminders fire after the event time
+  const occurrence = getNextOccurrence(base, event.repeatType, startOfToday);
+
+  const triggerDay = new Date(occurrence.getFullYear(), occurrence.getMonth(), occurrence.getDate() - reminder.offsetDays);
+  const [y, m, d] = [triggerDay.getFullYear(), triggerDay.getMonth(), triggerDay.getDate()];
+  const [reminderHours, reminderMinutes] = (reminder.reminderTime || '09:00').split(':').map(Number);
+
+  return {
+    occurrence,
+    triggerAt: zonedTimeToUtc(y, m, d, reminderHours, reminderMinutes, tz),
+    triggerDayStart: zonedTimeToUtc(y, m, d, 0, 0, tz)
+  };
 }
 
 /**

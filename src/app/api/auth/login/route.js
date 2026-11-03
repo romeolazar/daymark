@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { comparePassword, signToken } from '@/lib/auth';
+import { getClientIp, getLoginRetryAfter, recordLoginFailure, clearLoginFailures } from '@/lib/rateLimit';
 
 export async function POST(req) {
   try {
+    const clientIp = getClientIp(req);
+    const retryAfter = getLoginRetryAfter(clientIp);
+    if (retryAfter > 0) {
+      const minutes = Math.ceil(retryAfter / 60);
+      return NextResponse.json(
+        { error: `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.` },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      );
+    }
+
     const { email, password } = await req.json();
 
     if (!email || !password) {
@@ -15,13 +26,17 @@ export async function POST(req) {
     });
 
     if (!user) {
+      recordLoginFailure(clientIp);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
     const passwordMatch = await comparePassword(password, user.passwordHash);
     if (!passwordMatch) {
+      recordLoginFailure(clientIp);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
+
+    clearLoginFailures(clientIp);
 
     const token = await signToken({ id: user.id, email: user.email });
 

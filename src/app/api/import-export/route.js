@@ -16,6 +16,7 @@ export async function GET(req) {
         categories: true,
         events: {
           include: {
+            category: true,
             reminders: true
           }
         }
@@ -27,7 +28,7 @@ export async function GET(req) {
       exportedAt: new Date().toISOString(),
       settings: user.settings ? {
         telegramEnabled: user.settings.telegramEnabled,
-        telegramBotToken: user.settings.telegramBotToken,
+        // The bot token is a secret and stays out of export files; importing keeps the current one
         telegramChatId: user.settings.telegramChatId,
         defaultReminderTime: user.settings.defaultReminderTime,
         defaultViewFormat: user.settings.defaultViewFormat

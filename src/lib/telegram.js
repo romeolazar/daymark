@@ -3,6 +3,19 @@
  */
 
 /**
+ * Escapes user text for messages sent with parse_mode HTML.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function escapeTelegramHtml(text) {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
  * Sends a Telegram notification using a custom Bot Token and Chat ID.
  * 
  * @param {string} token - The Telegram Bot Token from BotFather
