@@ -3,23 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/reminder-cron.js & next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.0",
+    "@prisma/client": "6.19.3",
     "bcryptjs": "^2.4.3",
     "jose": "^5.2.3",
     "next": "16.2.6",
+    "pg": "8.23.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "prisma": "^5.10.0"
+    "prisma": "6.19.3"
   }
 }

@@ -35,12 +35,14 @@ export async function POST(req) {
     }
 
     // Check for duplicate name
-    const existing = await prisma.category.findFirst({
-      where: {
-        userId: payload.id,
-        name: { equals: name.trim(), mode: 'insensitive' }
-      }
+    // SQLite has no case-insensitive mode in Prisma, so compare in JS
+    const userCategories = await prisma.category.findMany({
+      where: { userId: payload.id },
+      select: { id: true, name: true }
     });
+    const existing = userCategories.find(
+      (c) => c.name.toLowerCase() === name.trim().toLowerCase()
+    );
 
     if (existing) {
       return NextResponse.json({ error: 'Category name already exists' }, { status: 400 });

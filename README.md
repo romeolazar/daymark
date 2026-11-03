@@ -24,15 +24,16 @@
   - **Card View**: Styled glass container grids with customizable radial gradients.
   - **Poster View**: Vertical Apple Invites-style portrait frames with deep-vignetted custom background image URLs.
 - 📝 **Categorization & Custom Icons**: Create custom color-coded categories and select from a flat-grid emoji picker of 64 preset icons.
-- 🔒 **Self-Hosted Security**: Protect your data with authorization middleware powered by Next.js and Prisma, backed by a local PostgreSQL database container.
+- 🔒 **Self-Hosted Security**: Protect your data with authorization middleware powered by Next.js and Prisma, backed by an embedded SQLite database stored in a Docker volume.
 - 🤖 **Telegram Notifications**: Set up automated event alerts (3, 2, or 1 day(s) before and on the day of the event) delivered directly to your Telegram bot.
-- ⏰ **Integrated Cron Worker**: Background scheduler runs continuously as part of the Docker Compose stack to ensure event reminders are always dispatched on time.
+- ⏰ **Built-in Reminder Scheduler**: Reminders are checked every minute inside the app process, with no separate cron container.
+- 📦 **Single Container**: App, database and scheduler run in one container with one data volume.
 
 ---
 
 ## 🚀 Deploying with Docker Compose (Recommended)
 
-Deploying Daymark is simple. You can run the entire stack (Next.js application, PostgreSQL database, schema sync job, and background reminder cron) using Docker Compose.
+Daymark runs as a **single container**: the Next.js app, an embedded SQLite database and the reminder scheduler. The database schema is created or updated automatically on every start.
 
 ### Prerequisites
 
@@ -41,31 +42,74 @@ Ensure you have [Docker](https://www.docker.com/) and [Docker Compose](https://d
 ### Run the Application
 
 1. Copy the `docker-compose.yml` file from this repository to your server or directory.
-2. Copy `.env.example` to `.env` and replace every `replace-with-*` value with long random secrets.
-3. Run the following command to pull the pre-built image and start the containers in the background:
+2. Copy `.env.example` to `.env` and set `JWT_SECRET` to a long random value.
+3. Start the container:
 
 ```bash
 docker compose up -d
 ```
 
-4. Open your browser and navigate to:
-   - **Main Web Interface**: [http://localhost:1403](http://localhost:1403)
+4. Open your browser and navigate to [http://localhost:1403](http://localhost:1403).
+
+Or without Compose:
+
+```bash
+docker run -d --name daymark -p 1403:1403 \
+  -e JWT_SECRET=change-me \
+  -v daymark_data:/app/data \
+  -v daymark_uploads:/app/public/uploads \
+  --restart unless-stopped \
+  romeolazar/daymark:latest
+```
+
+### Backups
+
+All data lives in `/app/data/daymark.db` (the `daymark_data` volume). To take a consistent snapshot while the app is running:
+
+```bash
+docker exec daymark node scripts/backup-db.js
+docker cp daymark:/app/data/backup-<timestamp>.db ./
+```
+
+Stopping the container and copying the volume also works.
 
 ---
 
 ## ⚙️ Environment Configuration
 
-Configure deployment values in `.env` before starting the stack:
-
-| Variable | Description | Example |
+| Variable | Description | Default |
 | :--- | :--- | :--- |
 | `APP_PORT` | Host port exposed by Docker Compose. | `1403` |
-| `POSTGRES_DB` | PostgreSQL database name. | `daymark` |
-| `POSTGRES_USER` | PostgreSQL database user. | `daymark` |
-| `POSTGRES_PASSWORD` | PostgreSQL database password. | `replace-with-a-long-random-database-password` |
-| `DATABASE_URL` | Internal PostgreSQL connection URL used by the app and migration job. | `postgresql://daymark:replace-with-a-long-random-database-password@db:5432/daymark` |
-| `JWT_SECRET` | Secret key used for signing session auth tokens. | `replace-with-a-long-random-jwt-secret` |
-| `CRON_TOKEN` | Auth token used to authorize the background trigger ping. | `replace-with-a-long-random-cron-token` |
+| `JWT_SECRET` | **Required.** Secret key used for signing session auth tokens. | none |
+| `TZ` | Timezone used for reminder times, e.g. `Europe/Bucharest`. | `UTC` |
+| `CRON_TOKEN` | Optional. Enables the manual trigger `GET /api/cron?token=...`. Reminders run automatically without it. | empty (disabled) |
+| `DATABASE_URL` | SQLite file location. Only change it if you know why. | `file:/app/data/daymark.db` |
+| `DISABLE_SCHEDULER` | Set to `true` to turn off the built-in reminder scheduler. | `false` |
+
+---
+
+## 🔁 Migrating from the PostgreSQL setup
+
+Earlier versions ran four containers (`daymark`, `daymark-cron`, `daymark-migrate`, `daymark-db`). To move your data into the single-container setup:
+
+1. Keep the old `daymark-db` container running and note its network (e.g. `daymark_default`) and its `DATABASE_URL`.
+2. Stop the old app containers so nothing writes during the copy: `docker stop daymark daymark-cron`.
+3. Pull the new image and copy the data into a new volume:
+
+```bash
+docker pull romeolazar/daymark:latest
+docker run --rm \
+  --network daymark_default \
+  -v daymark_data:/app/data \
+  -e SOURCE_DATABASE_URL=postgresql://daymark:PASSWORD@db:5432/daymark \
+  romeolazar/daymark:latest \
+  node scripts/migrate-from-postgres.js
+```
+
+The script copies users, settings, categories, events and reminders (including IDs, so existing sessions and reminder history keep working) and verifies the row counts.
+
+4. Remove the old containers (`daymark`, `daymark-cron`, `daymark-migrate`, `daymark-db`) and deploy the new `docker-compose.yml`, using the same volume name (`daymark_data`) and the same `JWT_SECRET`.
+5. Once everything looks right, you can delete the old `pg_data` volume.
 
 ---
 
@@ -92,7 +136,7 @@ npm install
 
 ### 2. Configure Database & Prisma
 
-Set up a local Postgres database, define the `DATABASE_URL` in a `.env` file, then push the database schema:
+Define `DATABASE_URL` (e.g. `file:./dev.db`) and `JWT_SECRET` in a `.env` file, then create the database schema:
 
 ```bash
 npx prisma db push
@@ -105,4 +149,4 @@ npx prisma generate
 npm run dev
 ```
 
-The site will be running at [http://localhost:1403](http://localhost:1403). The development command also starts the background cron script in parallel to trigger notifications.
+The site will be running at [http://localhost:1403](http://localhost:1403). The reminder scheduler starts automatically with the server.
